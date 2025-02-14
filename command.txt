@@ -1,1 +1,4 @@
 ssh-keygen -t rsa -b 2048 -C "vandung545917@gmail.com" -f ~/.ssh/gcp-key-1
+
+alias d='docker'
+alias dc='docker-compose'
