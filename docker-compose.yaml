@@ -23,8 +23,8 @@ services:
      - 3306:3306
     environment:
      - MYSQL_ROOT_PASSWORD=debezium
-     - MYSQL_USER=mysql
-     - MYSQL_PASSWORD=mysql
+     - MYSQL_USER=mysqluser
+     - MYSQL_PASSWORD=mysqlpw
   postgres:
     container_name: postgres
     image: quay.io/debezium/example-postgres:${DEBEZIUM_VERSION}
@@ -33,6 +33,18 @@ services:
     environment:
      - POSTGRES_USER=postgres
      - POSTGRES_PASSWORD=postgres
+
+  oracle-db:
+    container_name: oracle-db
+    image: gvenzl/oracle-xe:18
+    ports:
+     - 1521:1521
+    environment:
+     - ORACLE_PASSWORD=newpassword
+    volumes:
+     - oracle-volume:/opt/oracle/oradata
+    restart: always
+
   connect:
     container_name: connect
     image: quay.io/debezium/connect:${DEBEZIUM_VERSION}
@@ -42,9 +54,14 @@ services:
      - kafka
      - mysql
      - postgres
+     - oracle-db
     environment:
      - BOOTSTRAP_SERVERS=kafka:9092
      - GROUP_ID=1
      - CONFIG_STORAGE_TOPIC=debezium_configs
      - OFFSET_STORAGE_TOPIC=debezium_offsets
      - STATUS_STORAGE_TOPIC=debezium_statuses
+
+
+volumes:
+  oracle-volume:

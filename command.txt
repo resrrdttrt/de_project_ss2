@@ -2,3 +2,9 @@ ssh-keygen -t rsa -b 2048 -C "vandung545917@gmail.com" -f ~/.ssh/gcp-key-1
 
 alias d='docker'
 alias dc='docker-compose'
+
+python3 -m venv env_chec
+
+mysql -h localhost -u mysql -p
+
+INSERT INTO customers (id, first_name, last_name, email)VALUES (1005, 'John', 'Doe', 'john.doe@example.com');
