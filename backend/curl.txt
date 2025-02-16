@@ -1,0 +1,32 @@
+curl -X POST http://localhost:8000/predict \
+-H "Content-Type: application/json" \
+-d '{
+  "items": [
+    {
+      "Item_Id": 101,
+      "Item_Visibility": 0.1,
+      "Store_Id": 1,
+      "Item_Fit_Type": 1,
+      "Item_Fabric": 2,
+      "Item_Fabric_Amount": 5.0,
+      "Item_MRP": 200.0,
+      "Store_Establishment_Year": 2010,
+      "Store_Size": 1,
+      "Store_Location_Type": 1,
+      "Store_Type": 1
+    },
+    {
+      "Item_Id": 102,
+      "Item_Visibility": 0.2,
+      "Store_Id": 2,
+      "Item_Fit_Type": 2,
+      "Item_Fabric": 1,
+      "Item_Fabric_Amount": 10.0,
+      "Item_MRP": 150.0,
+      "Store_Establishment_Year": 2015,
+      "Store_Size": 2,
+      "Store_Location_Type": 2,
+      "Store_Type": 2
+    }
+  ]
+}'

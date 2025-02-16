@@ -49,7 +49,7 @@ def insert_data_to_postgres(csv_file, db_config):
 
 if __name__ == "__main__":
     # CSV file path
-    csv_file = 'dataset/Stores.csv'  # Replace with the path to your CSV file
+    csv_file = '../../dataset/Stores.csv'  # Replace with the path to your CSV file
 
     # PostgreSQL connection configuration
     db_config = {

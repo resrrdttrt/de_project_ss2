@@ -1,30 +1,30 @@
 version: '2'
 services:
-  zookeeper:
-    container_name: zookeeper
-    image: quay.io/debezium/zookeeper:${DEBEZIUM_VERSION}
-    ports:
-     - 2181:2181
-     - 2888:2888
-     - 3888:3888
-  kafka:  
-    container_name: kafka
-    image: quay.io/debezium/kafka:${DEBEZIUM_VERSION}
-    ports:
-     - 9092:9092
-    depends_on:
-     - zookeeper
-    environment:
-     - ZOOKEEPER_CONNECT=zookeeper:2181
-  mysql:
-    container_name: mysql
-    image: quay.io/debezium/example-mysql:${DEBEZIUM_VERSION}
-    ports:
-     - 3306:3306
-    environment:
-     - MYSQL_ROOT_PASSWORD=debezium
-     - MYSQL_USER=mysqluser
-     - MYSQL_PASSWORD=mysqlpw
+  # zookeeper:
+  #   container_name: zookeeper
+  #   image: quay.io/debezium/zookeeper:${DEBEZIUM_VERSION}
+  #   ports:
+  #    - 2181:2181
+  #    - 2888:2888
+  #    - 3888:3888
+  # kafka:  
+  #   container_name: kafka
+  #   image: quay.io/debezium/kafka:${DEBEZIUM_VERSION}
+  #   ports:
+  #    - 9092:9092
+  #   depends_on:
+  #    - zookeeper
+  #   environment:
+  #    - ZOOKEEPER_CONNECT=zookeeper:2181
+  # mysql:
+  #   container_name: mysql
+  #   image: quay.io/debezium/example-mysql:${DEBEZIUM_VERSION}
+  #   ports:
+  #    - 3306:3306
+  #   environment:
+  #    - MYSQL_ROOT_PASSWORD=debezium
+  #    - MYSQL_USER=mysqluser
+  #    - MYSQL_PASSWORD=mysqlpw
   postgres:
     container_name: postgres
     image: quay.io/debezium/example-postgres:${DEBEZIUM_VERSION}
@@ -34,34 +34,34 @@ services:
      - POSTGRES_USER=postgres
      - POSTGRES_PASSWORD=postgres
 
-  oracle-db:
-    container_name: oracle-db
-    image: gvenzl/oracle-xe:18
-    ports:
-     - 1521:1521
-    environment:
-     - ORACLE_PASSWORD=newpassword
-    volumes:
-     - oracle-volume:/opt/oracle/oradata
-    restart: always
+  # oracle-db:
+  #   container_name: oracle-db
+  #   image: gvenzl/oracle-xe:18
+  #   ports:
+  #    - 1521:1521
+  #   environment:
+  #    - ORACLE_PASSWORD=newpassword
+  #   volumes:
+  #    - oracle-volume:/opt/oracle/oradata
+  #   restart: always
 
-  connect:
-    container_name: connect
-    image: quay.io/debezium/connect:${DEBEZIUM_VERSION}
-    ports:
-     - 8083:8083
-    depends_on:
-     - kafka
-     - mysql
-     - postgres
-     - oracle-db
-    environment:
-     - BOOTSTRAP_SERVERS=kafka:9092
-     - GROUP_ID=1
-     - CONFIG_STORAGE_TOPIC=debezium_configs
-     - OFFSET_STORAGE_TOPIC=debezium_offsets
-     - STATUS_STORAGE_TOPIC=debezium_statuses
+#   connect:
+#     container_name: connect
+#     image: quay.io/debezium/connect:${DEBEZIUM_VERSION}
+#     ports:
+#      - 8083:8083
+#     depends_on:
+#      - kafka
+#      - mysql
+#      - postgres
+#      - oracle-db
+#     environment:
+#      - BOOTSTRAP_SERVERS=kafka:9092
+#      - GROUP_ID=1
+#      - CONFIG_STORAGE_TOPIC=debezium_configs
+#      - OFFSET_STORAGE_TOPIC=debezium_offsets
+#      - STATUS_STORAGE_TOPIC=debezium_statuses
 
 
-volumes:
-  oracle-volume:
+# volumes:
+#   oracle-volume:

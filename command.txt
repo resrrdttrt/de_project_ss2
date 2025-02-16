@@ -8,3 +8,5 @@ python3 -m venv env_chec
 mysql -h localhost -u mysql -p
 
 INSERT INTO customers (id, first_name, last_name, email)VALUES (1005, 'John', 'Doe', 'john.doe@example.com');
+
+pip freeze > requirements.txt
