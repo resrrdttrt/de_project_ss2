@@ -1,9 +1,11 @@
+MYSQL
+
 curl -i -X POST http://localhost:8083/connectors/ \
   -H "Accept:application/json" \
   -H  "Content-Type:application/json" \
   -d \
 '{
-    "name": "inventory-connector-from-mysql",
+    "name": "mysql_connector",
     "config": {
         "connector.class": "io.debezium.connector.mysql.MySqlConnector",
         "tasks.max": "1",
@@ -13,7 +15,7 @@ curl -i -X POST http://localhost:8083/connectors/ \
         "database.password": "dbz",
         "database.server.id": "184054",
         "topic.prefix": "from_mysql",
-        "table.include.list": "inventory.customers",
+        "table.include.list": "inventory.transaction",
         "schema.history.internal.kafka.bootstrap.servers": "kafka:9092",
         "schema.history.internal.kafka.topic": "schema-changes.inventory",
         "transforms": "route",
@@ -22,3 +24,45 @@ curl -i -X POST http://localhost:8083/connectors/ \
         "transforms.route.replacement": "from_mysql_$3"
     }
 }'
+
+
+
+curl -X POST http://localhost:8080/api/connector/1/postgres \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "postgres_connector",
+    "config": {
+        "topic.prefix": "from_postgres",
+        "database.hostname": "postgres",
+        "database.port": "5432",
+        "database.user": "postgres",
+        "database.password": "postgres",
+        "database.dbname": "postgres",
+        "schema.include.list": "inventory",
+        "table.include.list": "inventory.transaction",
+        "heartbeat.interval.ms": 30000,
+        "heartbeat.action.query": "select * from inventory.orders where id = 10001",
+        "query.fetch.size": 500,
+        "topic.creation.groups": "debezium-etl",
+        "topic.creation.debezium-etl.include": "",
+        "topic.creation.debezium-etl.exclude": "",
+        "topic.creation.default.partitions": -1,
+        "topic.creation.default.replication.factor": -1,
+        "plugin.name": "pgoutput",
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "tasks.max": "1",
+        "skipped.operations": "r",
+        "snapshot.mode": "never",
+        "slot.name": "debezium_order",
+        "publication.autocreate.mode": "filtered",
+        "publication.name": "dbz_order_publication"
+    }
+}'
+
+
+
+
+
+curl -H "Accept:application/json" localhost:8083/connectors/
+
+curl -X DELETE -H "Accept: application/json" http://localhost:8083/connectors/<connector_name>

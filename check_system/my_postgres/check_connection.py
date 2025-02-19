@@ -19,12 +19,19 @@ def create_connection(db_name, user, password, host, port):
         if connection:
             connection.close()
 
+# # Replace these values with your actual database credentials
+# db_name = 'postgres'
+# user = 'postgres'
+# password = 'postgres'
+# host = 'localhost'
+# port = '5432'
+
 # Replace these values with your actual database credentials
 db_name = 'postgres'
-user = 'postgres'
-password = 'postgres'
+user = 'airflow'
+password = 'airflow'
 host = 'localhost'
-port = '5432'
+port = '5433'
 
 # Check connection
 create_connection(db_name, user, password, host, port)

@@ -36,8 +36,9 @@ def consume_messages(broker_url, topic_name, group_id):
 
 if __name__ == "__main__":
     broker_url = 'localhost:9092'  
-    # topic_name = 'test-topic'    
-    topic_name = 'from_mysql_customers'    
+    topic_name = 'from_mysql_transaction'    
+    # topic_name = 'from_mysql_customers'    
+
     group_id = 'test-consumer-group'  
 
     # Start consuming messages

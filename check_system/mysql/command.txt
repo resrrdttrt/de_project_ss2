@@ -1,0 +1,5 @@
+INSERT INTO transaction (item_id, amount, buy_time, customer)
+VALUES 
+('BJK56', 3, NOW(), 'customer_691'),
+('BLS15', 4, NOW(), 'customer_218'),
+('FDB12', 5, NOW(), 'customer_496');
