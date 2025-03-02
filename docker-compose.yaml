@@ -18,17 +18,17 @@ services:
   #   environment:
   #    - ZOOKEEPER_CONNECT=zookeeper:2181
 
-  mysql:
-    container_name: mysql
-    image: quay.io/debezium/example-mysql:${DEBEZIUM_VERSION}
-    ports:
-     - 3306:3306
-    environment:
-     - MYSQL_ROOT_PASSWORD=debezium
-     - MYSQL_USER=mysqluser
-     - MYSQL_PASSWORD=mysqlpw
-    volumes:
-     - mysql_data:/var/lib/mysql # Persist MySQL data
+  # mysql:
+  #   container_name: mysql
+  #   image: quay.io/debezium/example-mysql:${DEBEZIUM_VERSION}
+  #   ports:
+  #    - 3306:3306
+  #   environment:
+  #    - MYSQL_ROOT_PASSWORD=debezium
+  #    - MYSQL_USER=mysqluser
+  #    - MYSQL_PASSWORD=mysqlpw
+  #   volumes:
+  #    - mysql_data:/var/lib/mysql # Persist MySQL data
 
   postgres:
     container_name: postgres
@@ -57,20 +57,20 @@ services:
   #    - OFFSET_STORAGE_TOPIC=debezium_offsets
   #    - STATUS_STORAGE_TOPIC=debezium_statuses
 
-  connect:
-    container_name: connect
-    image: quay.io/debezium/connect:${DEBEZIUM_VERSION}
-    ports:
-      - 8083:8083
-    depends_on:
-      - mysql
-      - postgres
-    environment:
-      - BOOTSTRAP_SERVERS=172.17.0.1:9092
-      - GROUP_ID=1
-      - CONFIG_STORAGE_TOPIC=debezium_configs
-      - OFFSET_STORAGE_TOPIC=debezium_offsets
-      - STATUS_STORAGE_TOPIC=debezium_statuses
+  # connect:
+  #   container_name: connect
+  #   image: quay.io/debezium/connect:${DEBEZIUM_VERSION}
+  #   ports:
+  #     - 8083:8083
+  #   depends_on:
+  #     - mysql
+  #     - postgres
+  #   environment:
+  #     - BOOTSTRAP_SERVERS=172.17.0.1:9092
+  #     - GROUP_ID=1
+  #     - CONFIG_STORAGE_TOPIC=debezium_configs
+  #     - OFFSET_STORAGE_TOPIC=debezium_offsets
+  #     - STATUS_STORAGE_TOPIC=debezium_statuses
 
 volumes:
   mysql_data:
