@@ -10,7 +10,7 @@ import time
 
 # Set page configuration
 st.set_page_config(
-    page_title="Item Management System",
+    page_title="Textile Industry Management System",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -49,8 +49,9 @@ def connect_to_db():
     conn = psycopg2.connect(
         host="localhost",
         database="postgres",
-        user="postgres",
-        password="postgres"
+        user="airflow",
+        password="airflow",
+        port="5433"
     )
     try:
         yield conn
@@ -2976,7 +2977,7 @@ def display_statistics_page():
             
 # ---- ABOUT PAGE ----
 def display_about_page():
-    st.title("About the Item Management System")
+    st.title("About the Textile Industry Management System")
     
     st.markdown("""
     ### Overview
