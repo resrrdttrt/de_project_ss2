@@ -238,7 +238,7 @@ def main():
         # Main menu options
         main_menu = option_menu(
             menu_title=None,
-            options=["Items", "Stores", "Transaction", "Realtime", "About"],
+            options=["Items", "Stores", "Transaction", "Realtime", "Predict", "About"],
             icons=["table", "shop", "cash-coin", "broadcast", "info-circle"],
             menu_icon="cast",
             default_index=0,
@@ -311,6 +311,294 @@ def main():
 
     elif main_menu == "About":
         display_about_page()
+    elif main_menu == "Predict":
+        display_predict_page()
+
+def display_predict_page():
+    st.title("Sales Prediction")
+    
+    # Create tabs for single item prediction and batch prediction
+    tab1, tab2 = st.tabs(["Single Item Prediction", "Batch Prediction"])
+    
+    with tab1:
+        st.markdown("### Enter Item Details")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            item_id = st.number_input("Item ID", min_value=1, step=1)
+            item_visibility = st.slider("Item Visibility", min_value=0.0, max_value=1.0, value=0.5, step=0.01)
+            store_id = st.number_input("Store ID", min_value=1, step=1)
+            item_fit_type = st.selectbox("Item Fit Type", options=[1, 2, 3], format_func=lambda x: {1: "Slim", 2: "Regular", 3: "Oversize"}.get(x, str(x)))
+            item_fabric = st.selectbox("Item Fabric", options=[1, 2, 3, 4, 5], format_func=lambda x: {1: "Cotton", 2: "Polyester", 3: "Linen", 4: "Silk", 5: "Other"}.get(x, str(x)))
+        
+        with col2:
+            item_fabric_amount = st.number_input("Item Fabric Amount", min_value=0.1, step=0.1, value=8.0)
+            item_mrp = st.number_input("Item MRP (₹)", min_value=1.0, step=10.0, value=199.99)
+            store_establishment_year = st.number_input("Store Establishment Year", min_value=1950, max_value=2025, value=2010)
+            store_size = st.selectbox("Store Size", options=[1, 2, 3], format_func=lambda x: {1: "Small", 2: "Medium", 3: "Large"}.get(x, str(x)))
+            store_location_type = st.selectbox("Store Location Type", options=[1, 2, 3], format_func=lambda x: {1: "Tier 1", 2: "Tier 2", 3: "Tier 3"}.get(x, str(x)))
+            store_type = st.selectbox("Store Type", options=[1, 2], format_func=lambda x: {1: "Flagship Store", 2: "Regular Store"}.get(x, str(x)))
+        
+        if st.button("Predict Sales", key="single_predict"):
+            # Create payload for API
+            payload = {
+                "items": [
+                    {
+                        "Item_Id": int(item_id),
+                        "Item_Visibility": float(item_visibility),
+                        "Store_Id": int(store_id),
+                        "Item_Fit_Type": int(item_fit_type),
+                        "Item_Fabric": int(item_fabric),
+                        "Item_Fabric_Amount": float(item_fabric_amount),
+                        "Item_MRP": float(item_mrp),
+                        "Store_Establishment_Year": int(store_establishment_year),
+                        "Store_Size": int(store_size),
+                        "Store_Location_Type": int(store_location_type),
+                        "Store_Type": int(store_type)
+                    }
+                ]
+            }
+            
+            try:
+                # Show spinner while fetching results
+                with st.spinner("Predicting sales..."):
+                    # Make API call
+                    import requests
+                    import json
+                    
+                    response = requests.post(
+                        "http://localhost:8000/predict",  # Change URL if needed
+                        json=payload,
+                        headers={"Content-Type": "application/json"}
+                    )
+                    
+                    if response.status_code == 200:
+                        result = response.json()
+                        prediction = result["predictions"][0]
+                        
+                        # Display results
+                        st.success("Prediction completed successfully!")
+                        
+                        st.markdown("### Prediction Results")
+                        result_col1, result_col2 = st.columns(2)
+                        
+                        with result_col1:
+                            st.metric(
+                                "Predicted Sales (Units)", 
+                                f"{prediction['Sales_Prediction']:.2f}",
+                                delta=None
+                            )
+                            
+                        with result_col2:
+                            st.metric(
+                                "Required Fabric",
+                                f"{prediction['Required_Fabric_Prediction']:.2f} units",
+                                delta=None
+                            )
+                        
+                        # Create gauge chart for sales prediction
+                        max_sales = prediction['Sales_Prediction'] * 2  # Just to set a reasonable max
+                        fig = go.Figure(go.Indicator(
+                            mode="gauge+number",
+                            value=prediction['Sales_Prediction'],
+                            title={'text': "Predicted Sales"},
+                            gauge={
+                                'axis': {'range': [0, max_sales]},
+                                'bar': {'color': "#1E88E5"},
+                                'steps': [
+                                    {'range': [0, max_sales/3], 'color': "#EF9A9A"},
+                                    {'range': [max_sales/3, max_sales*2/3], 'color': "#FFCC80"},
+                                    {'range': [max_sales*2/3, max_sales], 'color': "#A5D6A7"}
+                                ]
+                            }
+                        ))
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Show important features that influenced the prediction
+                        st.markdown("### Key Factors Influencing Prediction")
+                        features_data = {
+                            'Feature': ['Item MRP', 'Fabric Amount', 'Store Size', 'Location Type', 'Item Visibility'],
+                            'Value': [
+                                f"₹{item_mrp:.2f}",
+                                f"{item_fabric_amount:.1f} units",
+                                {1: "Small", 2: "Medium", 3: "Large"}.get(store_size),
+                                {1: "Tier 1", 2: "Tier 2", 3: "Tier 3"}.get(store_location_type),
+                                f"{item_visibility:.2f}"
+                            ],
+                            'Impact': [0.35, 0.25, 0.15, 0.15, 0.10]  # Dummy importance values
+                        }
+                        
+                        features_df = pd.DataFrame(features_data)
+                        
+                        # Create impact visualization
+                        fig = px.bar(
+                            features_df.sort_values('Impact', ascending=False),
+                            x='Impact',
+                            y='Feature',
+                            orientation='h',
+                            color='Impact',
+                            color_continuous_scale='Blues',
+                            labels={'Impact': 'Relative Importance'},
+                            title='Feature Importance (Estimated)'
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                    else:
+                        st.error(f"Error: {response.status_code} - {response.text}")
+            
+            except Exception as e:
+                st.error(f"Error making prediction: {str(e)}")
+                st.info("Make sure the prediction API is running at http://localhost:8000")
+    
+    with tab2:
+        st.markdown("### Batch Prediction")
+        st.info("Upload a CSV file with multiple items to predict sales for all of them at once.")
+        
+        # Show sample format
+        st.markdown("""
+        **CSV Format:**
+        ```
+        Item_Id,Item_Visibility,Store_Id,Item_Fit_Type,Item_Fabric,Item_Fabric_Amount,Item_MRP,Store_Establishment_Year,Store_Size,Store_Location_Type,Store_Type
+        101,0.5,1,2,1,8.2,199.99,2010,2,1,1
+        102,0.3,2,1,3,7.5,249.50,2015,3,2,1
+        ```
+        """)
+        
+        # File uploader
+        uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
+        
+        if uploaded_file is not None:
+            try:
+                # Read CSV file
+                df = pd.read_csv(uploaded_file)
+                
+                # Display uploaded data
+                st.markdown("### Uploaded Data")
+                st.dataframe(df)
+                
+                # Validate columns
+                required_columns = ["Item_Id", "Item_Visibility", "Store_Id", "Item_Fit_Type", 
+                                    "Item_Fabric", "Item_Fabric_Amount", "Item_MRP", 
+                                    "Store_Establishment_Year", "Store_Size", 
+                                    "Store_Location_Type", "Store_Type"]
+                
+                missing_columns = [col for col in required_columns if col not in df.columns]
+                
+                if missing_columns:
+                    st.error(f"Missing required columns: {', '.join(missing_columns)}")
+                else:
+                    if st.button("Predict Batch Sales"):
+                        # Create payload for API
+                        items_list = []
+                        for _, row in df.iterrows():
+                            items_list.append({
+                                "Item_Id": int(row["Item_Id"]),
+                                "Item_Visibility": float(row["Item_Visibility"]),
+                                "Store_Id": int(row["Store_Id"]),
+                                "Item_Fit_Type": int(row["Item_Fit_Type"]),
+                                "Item_Fabric": int(row["Item_Fabric"]),
+                                "Item_Fabric_Amount": float(row["Item_Fabric_Amount"]),
+                                "Item_MRP": float(row["Item_MRP"]),
+                                "Store_Establishment_Year": int(row["Store_Establishment_Year"]),
+                                "Store_Size": int(row["Store_Size"]),
+                                "Store_Location_Type": int(row["Store_Location_Type"]),
+                                "Store_Type": int(row["Store_Type"])
+                            })
+                        
+                        payload = {"items": items_list}
+                        
+                        try:
+                            # Show spinner while fetching results
+                            with st.spinner("Predicting sales for all items..."):
+                                # Make API call
+                                import requests
+                                
+                                response = requests.post(
+                                    "http://localhost:8000/predict",  # Change URL if needed
+                                    json=payload,
+                                    headers={"Content-Type": "application/json"}
+                                )
+                                
+                                if response.status_code == 200:
+                                    result = response.json()
+                                    
+                                    # Create results dataframe
+                                    results_data = []
+                                    for pred in result["predictions"]:
+                                        results_data.append({
+                                            "Item_Id": pred["Item_Id"],
+                                            "Sales_Prediction": round(pred["Sales_Prediction"], 2),
+                                            "Required_Fabric": round(pred["Required_Fabric_Prediction"], 2)
+                                        })
+                                    
+                                    results_df = pd.DataFrame(results_data)
+                                    
+                                    # Display results
+                                    st.success(f"Successfully predicted sales for {len(results_df)} items!")
+                                    
+                                    st.markdown("### Prediction Results")
+                                    st.dataframe(
+                                        results_df,
+                                        column_config={
+                                            "Item_Id": "Item ID",
+                                            "Sales_Prediction": st.column_config.NumberColumn("Predicted Sales (Units)", format="%.2f"),
+                                            "Required_Fabric": st.column_config.NumberColumn("Required Fabric (Units)", format="%.2f")
+                                        },
+                                        hide_index=True,
+                                        use_container_width=True
+                                    )
+                                    
+                                    # Visualization of batch results
+                                    st.markdown("### Results Visualization")
+                                    
+                                    # Sales prediction by item
+                                    fig = px.bar(
+                                        results_df,
+                                        x="Item_Id",
+                                        y="Sales_Prediction",
+                                        title="Predicted Sales by Item",
+                                        labels={
+                                            "Item_Id": "Item ID",
+                                            "Sales_Prediction": "Predicted Sales (Units)"
+                                        }
+                                    )
+                                    st.plotly_chart(fig, use_container_width=True)
+                                    
+                                    # Download results as CSV
+                                    csv = results_df.to_csv(index=False)
+                                    st.download_button(
+                                        label="Download Results as CSV",
+                                        data=csv,
+                                        file_name="sales_predictions.csv",
+                                        mime="text/csv"
+                                    )
+                                else:
+                                    st.error(f"Error: {response.status_code} - {response.text}")
+                        
+                        except Exception as e:
+                            st.error(f"Error making prediction: {str(e)}")
+                            st.info("Make sure the prediction API is running at http://localhost:8000")
+            
+            except Exception as e:
+                st.error(f"Error reading file: {str(e)}")
+                
+    # Add API health check
+    st.markdown("---")
+    with st.expander("API Status"):
+        try:
+            import requests
+            
+            response = requests.get("http://localhost:8000/health")
+            if response.status_code == 200:
+                status = response.json()
+                if status.get("model_loaded", False):
+                    st.success("API is online and model is loaded")
+                else:
+                    st.warning("API is online but model is not loaded")
+            else:
+                st.error(f"API health check failed: {response.status_code}")
+        except Exception:
+            st.error("Failed to connect to API. Make sure the API is running at http://localhost:8000")
 
 def display_realtime_data_page():
     st.title("Realtime Data Monitor")
@@ -1935,10 +2223,348 @@ def display_stores_data_page():
             else:
                 st.info("No stores found matching your criteria.")
 
+# def display_stores_data_page():
+#     st.title("Stores Management")
+    
+#     # Initialize session state variables if they don't exist
+#     if 'stores_page_num' not in st.session_state:
+#         st.session_state.stores_page_num = 0
+#     if 'stores_per_page' not in st.session_state:
+#         st.session_state.stores_per_page = 20
+#     if 'stores_editing' not in st.session_state:
+#         st.session_state.stores_editing = False
+#     if 'edit_store' not in st.session_state:
+#         st.session_state.edit_store = {}
+#     if 'confirming_store_delete' not in st.session_state:
+#         st.session_state.confirming_store_delete = None
+#     if 'adding_new_store' not in st.session_state:
+#         st.session_state.adding_new_store = False
+#     if 'stores_filters' not in st.session_state:
+#         st.session_state.stores_filters = {}
+    
+#     # Create layout with columns
+#     col1, col2 = st.columns([3, 1])
+    
+#     try:
+#         # Get database connection
+#         with connect_to_db() as conn:
+#             cursor = conn.cursor()
+            
+#             # Get distinct values for filtering from database
+#             cursor.execute("SELECT DISTINCT store_size FROM stores ORDER BY store_size")
+#             store_sizes = [row['store_size'] for row in cursor.fetchall()]
+            
+#             cursor.execute("SELECT DISTINCT store_location_type FROM stores ORDER BY store_location_type")
+#             location_types = [row['store_location_type'] for row in cursor.fetchall()]
+            
+#             cursor.execute("SELECT DISTINCT store_type FROM stores ORDER BY store_type")
+#             store_types = [row['store_type'] for row in cursor.fetchall()]
+            
+#             # Get min and max establishment years
+#             cursor.execute("SELECT MIN(store_establishment_year), MAX(store_establishment_year) FROM stores")
+#             year_range = cursor.fetchone()
+#             min_year = year_range['min']
+#             max_year = year_range['max']
+#             current_year = datetime.now().year
+            
+#             with col2:
+#                 st.markdown("### Filters")
+#                 st.markdown("---")
+                
+#                 # Filtering widgets
+#                 selected_sizes = st.multiselect(
+#                     "Store Size", 
+#                     options=store_sizes,
+#                     default=st.session_state.stores_filters.get('store_sizes', [])
+#                 )
+                
+#                 selected_locations = st.multiselect(
+#                     "Location Type", 
+#                     options=location_types,
+#                     default=st.session_state.stores_filters.get('location_types', [])
+#                 )
+                
+#                 selected_store_types = st.multiselect(
+#                     "Store Type", 
+#                     options=store_types,
+#                     default=st.session_state.stores_filters.get('store_types', [])
+#                 )
+                
+#                 establishment_range = st.slider(
+#                     "Establishment Year Range",
+#                     min_value=min_year if min_year else 1980,
+#                     max_value=current_year,
+#                     value=(
+#                         st.session_state.stores_filters.get('min_year', min_year if min_year else 1980),
+#                         st.session_state.stores_filters.get('max_year', current_year)
+#                     ),
+#                     step=1
+#                 )
+                
+#                 # Update filters in session state
+#                 filters = {}
+#                 if selected_sizes:
+#                     filters['store_sizes'] = selected_sizes
+#                 if selected_locations:
+#                     filters['location_types'] = selected_locations
+#                 if selected_store_types:
+#                     filters['store_types'] = selected_store_types
+                
+#                 filters['min_year'] = establishment_range[0]
+#                 filters['max_year'] = establishment_range[1]
+                
+#                 # Apply filters button
+#                 if st.button("Apply Filters"):
+#                     st.session_state.stores_filters = filters
+#                     st.session_state.stores_page_num = 0  # Reset to first page
+#                     st.rerun()
+                
+#                 # Reset filters button
+#                 if st.button("Reset Filters"):
+#                     st.session_state.stores_filters = {}
+#                     st.session_state.stores_page_num = 0  # Reset to first page
+#                     st.rerun()
+            
+#             with col1:
+#                 # Add new store button
+#                 if not st.session_state.adding_new_store and not st.session_state.stores_editing:
+#                     if st.button("Add New Store"):
+#                         st.session_state.adding_new_store = True
+#                         st.rerun()
+                
+#                 # Form for adding new store
+#                 if st.session_state.adding_new_store:
+#                     st.markdown("### Add New Store")
+#                     st.markdown("---")
+                    
+#                     with st.form(key="add_store_form"):
+#                         new_store_id = st.text_input("Store ID", key="new_store_id")
+#                         new_establishment_year = st.number_input("Establishment Year", min_value=1900, max_value=current_year, value=current_year, key="new_est_year")
+#                         new_store_size = st.selectbox("Store Size", options=store_sizes, key="new_size")
+#                         new_location_type = st.selectbox("Location Type", options=location_types, key="new_location")
+#                         new_store_type = st.selectbox("Store Type", options=store_types, key="new_store_type")
+                        
+#                         col1, col2 = st.columns(2)
+#                         submitted = col1.form_submit_button("Save")
+#                         if col2.form_submit_button("Cancel"):
+#                             st.session_state.adding_new_store = False
+#                             st.rerun()
+                        
+#                         if submitted:
+#                             if not new_store_id:
+#                                 st.error("Store ID is required")
+#                             else:
+#                                 try:
+#                                     # Insert new store into database
+#                                     cursor.execute("""
+#                                         INSERT INTO stores 
+#                                         (store_id, store_establishment_year, store_size, store_location_type, store_type) 
+#                                         VALUES (%s, %s, %s, %s, %s)
+#                                     """, (new_store_id, new_establishment_year, new_store_size, new_location_type, new_store_type))
+#                                     conn.commit()
+#                                     st.session_state.adding_new_store = False
+#                                     st.success(f"Store {new_store_id} added successfully!")
+#                                     time.sleep(1)
+#                                     st.rerun()
+#                                 except psycopg2.Error as e:
+#                                     conn.rollback()
+#                                     st.error(f"Error adding store: {e}")
+                
+#                 # Form for editing store
+#                 if st.session_state.stores_editing:
+#                     st.markdown(f"### Edit Store: {st.session_state.edit_store['store_id']}")
+#                     st.markdown("---")
+                    
+#                     with st.form(key="edit_store_form"):
+#                         edit_store = st.session_state.edit_store
+#                         edit_establishment_year = st.number_input("Establishment Year", value=int(edit_store['store_establishment_year']), min_value=1900, max_value=current_year)
+#                         edit_store_size = st.selectbox("Store Size", options=store_sizes, index=store_sizes.index(edit_store['store_size']) if edit_store['store_size'] in store_sizes else 0)
+#                         edit_location_type = st.selectbox("Location Type", options=location_types, index=location_types.index(edit_store['store_location_type']) if edit_store['store_location_type'] in location_types else 0)
+#                         edit_store_type = st.selectbox("Store Type", options=store_types, index=store_types.index(edit_store['store_type']) if edit_store['store_type'] in store_types else 0)
+                        
+#                         col1, col2 = st.columns(2)
+#                         submitted = col1.form_submit_button("Update")
+#                         if col2.form_submit_button("Cancel"):
+#                             st.session_state.stores_editing = False
+#                             st.rerun()
+                        
+#                         if submitted:
+#                             try:
+#                                 # Update store in database
+#                                 cursor.execute("""
+#                                     UPDATE stores 
+#                                     SET store_establishment_year = %s, store_size = %s, store_location_type = %s, store_type = %s
+#                                     WHERE store_id = %s
+#                                 """, (edit_establishment_year, edit_store_size, edit_location_type, edit_store_type, edit_store['store_id']))
+#                                 conn.commit()
+#                                 st.session_state.stores_editing = False
+#                                 st.success(f"Store {edit_store['store_id']} updated successfully!")
+#                                 time.sleep(1)
+#                                 st.rerun()
+#                             except psycopg2.Error as e:
+#                                 conn.rollback()
+#                                 st.error(f"Error updating store: {e}")
+                
+#                 # Delete confirmation
+#                 if st.session_state.confirming_store_delete:
+#                     st.markdown(f"### Confirm Delete: {st.session_state.confirming_store_delete}")
+#                     st.markdown("---")
+#                     st.warning("Are you sure you want to delete this store? This action cannot be undone.")
+                    
+#                     col1, col2 = st.columns(2)
+#                     if col1.button("Yes, Delete"):
+#                         try:
+#                             # Delete store from database
+#                             cursor.execute("DELETE FROM stores WHERE store_id = %s", (st.session_state.confirming_store_delete,))
+#                             conn.commit()
+#                             st.session_state.confirming_store_delete = None
+#                             st.success("Store deleted successfully!")
+#                             time.sleep(1)
+#                             st.rerun()
+#                         except psycopg2.Error as e:
+#                             conn.rollback()
+#                             st.error(f"Error deleting store: {e}")
+#                     if col2.button("Cancel"):
+#                         st.session_state.confirming_store_delete = None
+#                         st.rerun()
+                
+#                 # Display store data from PostgreSQL
+#                 if not st.session_state.adding_new_store and not st.session_state.stores_editing and not st.session_state.confirming_store_delete:
+#                     # Build query with filters and pagination
+#                     query = "SELECT * FROM stores WHERE 1=1"
+#                     params = []
+                    
+#                     # Apply filters
+#                     if 'store_sizes' in st.session_state.stores_filters and st.session_state.stores_filters['store_sizes']:
+#                         placeholders = ', '.join(['%s'] * len(st.session_state.stores_filters['store_sizes']))
+#                         query += f" AND store_size IN ({placeholders})"
+#                         params.extend(st.session_state.stores_filters['store_sizes'])
+                    
+#                     if 'location_types' in st.session_state.stores_filters and st.session_state.stores_filters['location_types']:
+#                         placeholders = ', '.join(['%s'] * len(st.session_state.stores_filters['location_types']))
+#                         query += f" AND store_location_type IN ({placeholders})"
+#                         params.extend(st.session_state.stores_filters['location_types'])
+                    
+#                     if 'store_types' in st.session_state.stores_filters and st.session_state.stores_filters['store_types']:
+#                         placeholders = ', '.join(['%s'] * len(st.session_state.stores_filters['store_types']))
+#                         query += f" AND store_type IN ({placeholders})"
+#                         params.extend(st.session_state.stores_filters['store_types'])
+                    
+#                     if 'min_year' in st.session_state.stores_filters:
+#                         query += " AND store_establishment_year >= %s"
+#                         params.append(st.session_state.stores_filters['min_year'])
+                    
+#                     if 'max_year' in st.session_state.stores_filters:
+#                         query += " AND store_establishment_year <= %s"
+#                         params.append(st.session_state.stores_filters['max_year'])
+                    
+#                     # Count total stores matching filters
+#                     count_query = query.replace("SELECT *", "SELECT COUNT(*)")
+#                     cursor.execute(count_query, params)
+#                     total_stores = cursor.fetchone()['count']
+                    
+#                     # Add pagination
+#                     query += " ORDER BY store_id LIMIT %s OFFSET %s"
+#                     offset = st.session_state.stores_page_num * st.session_state.stores_per_page
+#                     params.extend([st.session_state.stores_per_page, offset])
+                    
+#                     # Execute the query
+#                     cursor.execute(query, params)
+#                     stores_data = cursor.fetchall()
+                    
+#                     # Convert to dataframe
+#                     stores_df = pd.DataFrame(stores_data)
+                    
+#                     # Display total count and current range
+#                     total_pages = (total_stores - 1) // st.session_state.stores_per_page + 1 if total_stores > 0 else 1
+#                     start_store = offset + 1 if total_stores > 0 else 0
+#                     end_store = min(start_store + st.session_state.stores_per_page - 1, total_stores)
+                    
+#                     st.markdown(f"Showing {start_store} to {end_store} of {total_stores} stores")
+                    
+#                     # Display the stores table
+#                     if not stores_df.empty:
+#                         st.dataframe(
+#                             stores_df,
+#                             column_config={
+#                                 "store_id": "Store ID",
+#                                 "store_establishment_year": "Establishment Year",
+#                                 "store_size": "Size",
+#                                 "store_location_type": "Location",
+#                                 "store_type": "Store Type",
+#                             },
+#                             hide_index=True,
+#                             use_container_width=True
+#                         )
+                        
+#                         # Add pagination controls
+#                         col1, col2, col3 = st.columns([1, 2, 1])
+#                         with col1:
+#                             if st.session_state.stores_page_num > 0:
+#                                 if st.button("← Previous Page"):
+#                                     st.session_state.stores_page_num -= 1
+#                                     st.rerun()
+#                         with col2:
+#                             st.markdown(f"<div class='center-align'>Page {st.session_state.stores_page_num + 1} of {total_pages}</div>", unsafe_allow_html=True)
+#                         with col3:
+#                             if st.session_state.stores_page_num < total_pages - 1:
+#                                 if st.button("Next Page →"):
+#                                     st.session_state.stores_page_num += 1
+#                                     st.rerun()
+                        
+#                         # Add action buttons for each row
+#                         st.markdown("### Actions")
+#                         selected_store = st.selectbox("Select a store to edit or delete:", options=stores_df['store_id'].tolist())
+                        
+#                         col1, col2 = st.columns(2)
+#                         if col1.button("Edit Selected Store"):
+#                             # Fetch the store data from database
+#                             cursor.execute("SELECT * FROM stores WHERE store_id = %s", (selected_store,))
+#                             store_data = cursor.fetchone()
+#                             st.session_state.edit_store = store_data
+#                             st.session_state.stores_editing = True
+#                             st.rerun()
+                        
+#                         if col2.button("Delete Selected Store"):
+#                             st.session_state.confirming_store_delete = selected_store
+#                             st.rerun()
+#                     else:
+#                         st.info("No stores found matching your criteria.")
+        
+#     except Exception as e:
+#         st.error(f"Database connection error: {e}")
+    
+#     finally:
+#         # Close the database connection
+#         if 'conn' in locals() and conn is not None:
+#             cursor.close()
+#             conn.close()
+
+
 # ---- STORES VISUALIZATION PAGE ----
 def display_stores_visualization_page():
     st.title("Stores Visualization")
-    
+    # with connect_to_db() as conn:
+    #     cursor = conn.cursor()
+        
+    #     # Fetch all stores data
+    #     cursor.execute("""
+    #         SELECT 
+    #             store_id, store_establishment_year, store_size, 
+    #             store_location_type, store_type 
+    #         FROM stores
+    #     """)
+    #     stores_data = cursor.fetchall()
+        
+    #     # Convert to dataframe
+    #     stores_df = pd.DataFrame(stores_data)
+        
+    #     # Check if we have data
+    #     if stores_df.empty:
+    #         st.warning("No store data available in the database.")
+    #         return
+
+
     # Mock data for stores
     stores_data = {
         'store_id': ['STR049', 'STR050', 'STR051', 'STR052', 'STR053', 'STR054', 'STR055', 'STR056', 'STR057', 'STR058'],
@@ -2104,6 +2730,26 @@ def display_stores_visualization_page():
 def display_stores_statistics_page():
     st.title("Stores Statistics")
     
+    # with connect_to_db() as conn:
+    #     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+    #     # Fetch all stores data
+    #     cursor.execute("""
+    #         SELECT 
+    #             store_id, store_establishment_year, store_size, 
+    #             store_location_type, store_type 
+    #         FROM stores
+    #     """)
+    #     stores_data = cursor.fetchall()
+        
+    #     # Convert to dataframe
+    #     stores_df = pd.DataFrame(stores_data)
+        
+    #     # Check if we have data
+    #     if stores_df.empty:
+    #         st.warning("No store data available in the database.")
+    #         return
+
     # Mock data for stores
     stores_data = {
         'store_id': ['STR049', 'STR050', 'STR051', 'STR052', 'STR053', 'STR054', 'STR055', 'STR056', 'STR057', 'STR058'],
@@ -2988,12 +3634,12 @@ def display_about_page():
     
     ### Features
     
-    1. **Items Management**
-       - View all items with pagination
-       - Add new items
-       - Edit existing items
-       - Delete items
-       - Filter items based on various criteria
+    1. **Textile Industry Management**
+       - View all data with pagination
+       - Add new elements
+       - Edit existing elements
+       - Delete elements
+       - Filter elements based on various criteria
     
     2. **Data Visualization**
        - Multiple chart types including bar charts, pie charts, scatter plots, and more
@@ -3005,6 +3651,9 @@ def display_about_page():
        - Distribution analysis for categorical data
        - Correlation analysis between variables
     
+    4. **Predict**
+       - Add input and get prediction by some machine learning model
+                
     ### Technical Details
     
     This application is built using:
@@ -3051,6 +3700,7 @@ def display_about_page():
     
     For issues or feature requests, please contact the development team.
     """)
+
 
 # Run the app
 if __name__ == "__main__":
