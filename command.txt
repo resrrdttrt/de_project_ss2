@@ -4,11 +4,6 @@ alias d='docker'
 alias dc='docker-compose'
 alias p='python3'
 
-python3 -m venv env_chec
-
-mysql -h localhost -u mysqluser -p
-
-INSERT INTO customers (id, first_name, last_name, email)VALUES (1005, 'John', 'Doe', 'john.doe@example.com');
 
 pip freeze > requirements.txt
 
@@ -67,3 +62,24 @@ sudo systemctl status kafka
 cd /usr/local/kafka
 bin/kafka-topics.sh --list --bootstrap-server localhost:9092
 bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic sampleTopic --from-beginning
+
+
+\dt inventory.*
+
+mysql -h 127.0.0.1 -u mysqluser -p //password mysqlpw
+
+psql -h localhost -p 5432 -U postgres //password: postgres
+
+psql -h localhost -p 5433 -U airflow //passwor: airflow
+
+INSERT INTO inventory.transaction (item_id, amount, buy_time, customer) VALUES
+('FDX19', 2, '2025-04-14 09:00:00', 'customer_497'),
+('JNS60', 3, '2025-04-15 10:30:00', 'customer_497'),
+('CRD43', 5, '2025-04-16 11:45:00', 'customer_497');
+
+
+
+INSERT INTO transaction (item_id, amount, buy_time, customer) VALUES
+('JNS60', 5, '2025-04-14 09:00:00', 'customer_497'),
+('CRD43', 2, '2025-04-15 10:30:00', 'customer_497'),
+('FDX19', 1, '2025-04-16 11:45:00', 'customer_497');

@@ -5,15 +5,56 @@ Collecting usage statistics. To deactivate, set browser.gatherUsageStats to fals
   You can now view your Streamlit app in your browser.
 
   Local URL: http://localhost:8501
-  Network URL: http://10.140.0.3:8501
-  External URL: http://104.199.169.244:8501
+  Network URL: http://10.140.0.2:8501
+  External URL: http://35.236.172.212:8501
 
-/home/vandung545917/debezium/frontend/app.py:156: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+/home/dungngo0935431740/textile/frontend/app.py:156: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
   return pd.read_sql(query, conn)[column].tolist()
-/home/vandung545917/debezium/frontend/app.py:169: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+/home/dungngo0935431740/textile/frontend/app.py:169: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
   return pd.read_sql(query, conn).iloc[0].to_dict()
-/home/vandung545917/debezium/frontend/app.py:142: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+/home/dungngo0935431740/textile/frontend/app.py:142: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
   df = pd.read_sql(query, conn, params=params)
-/home/vandung545917/debezium/frontend/app.py:148: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+/home/dungngo0935431740/textile/frontend/app.py:148: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
   total_items = pd.read_sql(count_query, conn, params=params).iloc[0, 0]
-  Stopping...
+/home/dungngo0935431740/textile/frontend/app.py:156: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql(query, conn)[column].tolist()
+/home/dungngo0935431740/textile/frontend/app.py:169: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql(query, conn).iloc[0].to_dict()
+/home/dungngo0935431740/textile/frontend/app.py:142: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  df = pd.read_sql(query, conn, params=params)
+/home/dungngo0935431740/textile/frontend/app.py:148: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  total_items = pd.read_sql(count_query, conn, params=params).iloc[0, 0]
+/home/dungngo0935431740/textile/frontend/app.py:1213: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  stores = pd.read_sql("SELECT DISTINCT store_id FROM item_sales ORDER BY store_id", conn)['store_id'].tolist()
+/home/dungngo0935431740/textile/frontend/app.py:1216: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  items = pd.read_sql("SELECT DISTINCT item_id FROM item_sales ORDER BY item_id", conn)['item_id'].tolist()
+/home/dungngo0935431740/textile/frontend/app.py:1219: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  ranges = pd.read_sql("""
+/home/dungngo0935431740/textile/frontend/app.py:1388: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  df = pd.read_sql(query, conn, params=params)
+/home/dungngo0935431740/textile/frontend/app.py:1394: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  total_items = pd.read_sql(count_query, conn, params=params).iloc[0, 0]
+/home/dungngo0935431740/textile/frontend/app.py:614: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  import_data = pd.read_sql(
+/home/dungngo0935431740/textile/frontend/app.py:657: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  transaction_data = pd.read_sql(
+/home/dungngo0935431740/textile/frontend/app.py:614: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  import_data = pd.read_sql(
+/home/dungngo0935431740/textile/frontend/app.py:657: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  transaction_data = pd.read_sql(
+/home/dungngo0935431740/textile/frontend/app.py:614: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  import_data = pd.read_sql(
+/home/dungngo0935431740/textile/frontend/app.py:657: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  transaction_data = pd.read_sql(
+/home/dungngo0935431740/textile/frontend/app.py:614: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  import_data = pd.read_sql(
+/home/dungngo0935431740/textile/frontend/app.py:657: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  transaction_data = pd.read_sql(
+/home/dungngo0935431740/textile/frontend/app.py:156: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql(query, conn)[column].tolist()
+/home/dungngo0935431740/textile/frontend/app.py:169: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql(query, conn).iloc[0].to_dict()
+/home/dungngo0935431740/textile/frontend/app.py:142: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  df = pd.read_sql(query, conn, params=params)
+/home/dungngo0935431740/textile/frontend/app.py:148: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  total_items = pd.read_sql(count_query, conn, params=params).iloc[0, 0]

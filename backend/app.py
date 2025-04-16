@@ -9,10 +9,10 @@ import uvicorn
 app = FastAPI(title="Sales Prediction API")
 
 # Load the model from environment variable
-model_path = os.getenv('MODEL_PATH', 'app/models/model_randomForest.pkl')
+model_path = os.getenv('MODEL_NAME', 'model_randomForest.pkl')
 
 try:
-    model = pickle.load(open(f'app/models/{model_path}', 'rb'))
+    model = pickle.load(open(f'/app/models/{model_path}', 'rb'))
 except Exception as e:
     print(f"Error loading model: {e}")
     model = None

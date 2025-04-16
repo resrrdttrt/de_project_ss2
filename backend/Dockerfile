@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Set the environment variable for model path
-ENV MODEL_PATH="/app/ml/models/model_randomForest.pkl"
+ENV MODEL_PATH="/app/models/model_randomForest.pkl"
 
 # Expose the port the app runs on
 EXPOSE 8000

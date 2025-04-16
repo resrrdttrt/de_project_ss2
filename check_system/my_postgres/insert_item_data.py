@@ -52,21 +52,21 @@ if __name__ == "__main__":
     csv_file = '../../dataset/Items.csv'  # Replace with the path to your CSV file
 
     # PostgreSQL connection configuration
-    db_config = {
-        'host': 'localhost',       # Replace with your host
-        'port': '5432',            # Default PostgreSQL port
-        'database': 'postgres',     # Replace with your database name
-        'user': 'postgres',       # Replace with your PostgreSQL username
-        'password': 'postgres'  # Replace with your PostgreSQL password
-    }
-
     # db_config = {
     #     'host': 'localhost',       # Replace with your host
-    #     'port': '5433',            # Default PostgreSQL port
+    #     'port': '5432',            # Default PostgreSQL port
     #     'database': 'postgres',     # Replace with your database name
-    #     'user': 'airflow',       # Replace with your PostgreSQL username
-    #     'password': 'airflow'  # Replace with your PostgreSQL password
+    #     'user': 'postgres',       # Replace with your PostgreSQL username
+    #     'password': 'postgres'  # Replace with your PostgreSQL password
     # }
+
+    db_config = {
+        'host': 'localhost',       # Replace with your host
+        'port': '5433',            # Default PostgreSQL port
+        'database': 'postgres',     # Replace with your database name
+        'user': 'airflow',       # Replace with your PostgreSQL username
+        'password': 'airflow'  # Replace with your PostgreSQL password
+    }
 
     # Insert item data into PostgreSQL
     insert_items_data_to_postgres(csv_file, db_config)

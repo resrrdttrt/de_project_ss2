@@ -10,7 +10,7 @@ def consume_messages(broker_url, topic_name, group_id):
 
     # Subscribe to the topic
     consumer.subscribe([topic_name])
-
+    count = 0
     print(f"Consuming messages from topic '{topic_name}'...")
 
     try:
@@ -24,7 +24,9 @@ def consume_messages(broker_url, topic_name, group_id):
                 raise KafkaException(message.error())
             else:
                 # Successfully received a message
+                count += 1
                 print(f"Received message: {message.value().decode('utf-8')}")
+                print(f"Message count: {count}")
 
     except KeyboardInterrupt:
         print("Consumption interrupted by user.")
@@ -38,10 +40,13 @@ if __name__ == "__main__":
     broker_url = '172.17.0.1:9092'  
     # topic_name = 'from_mysql_transaction'    
     # topic_name = 'from_mysql_amount'    
+    # topic_name = 'from_mysql'    
+
     topic_name = 'from_postgres_transaction'    
     # topic_name = 'from_mysql_customers'    
-
-    group_id = 'test-consumer-group-112345245'  
+    import random
+    import string
+    group_id = 'test-consumer-group-3-' + ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
 
     # Start consuming messages
     consume_messages(broker_url, topic_name, group_id)
