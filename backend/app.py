@@ -5,6 +5,8 @@ import pickle
 import os
 from typing import List
 import uvicorn
+import numpy as np
+import math
 
 app = FastAPI(title="Sales Prediction API")
 
@@ -38,6 +40,18 @@ class Items(BaseModel):
 def create_dataframe(items_data: List[Item]) -> pd.DataFrame:
     return pd.DataFrame([item.dict() for item in items_data])
 
+# Helper function to sanitize float values for JSON
+def sanitize_float(value):
+    """Convert inf, -inf, or nan to regular float values"""
+    if value is None:
+        return 0.0
+    if isinstance(value, (int, float)):
+        if math.isnan(value):
+            return 0.0
+        if math.isinf(value):
+            return 999999.0 if value > 0 else -999999.0
+    return float(value)
+
 @app.post("/predict")
 async def predict(items: Items):
     if model is None:
@@ -56,20 +70,21 @@ async def predict(items: Items):
         result['Sales_Prediction'] = predictions_df['Prediction'].values
         result['Required_Fabric_Prediction'] = predictions_df['Prediction'].values * input_df['Item_Fabric_Amount']
         
-        # Convert results to JSON
+        # Convert results to JSON with sanitized values
         results = []
         for idx, row in result.iterrows():
+            # Sanitize all float values to prevent JSON serialization errors
             results.append({
                 'Item_Id': row['Item_Id'],
-                'Sales_Prediction': float(row['Sales_Prediction']),
-                'Required_Fabric_Prediction': float(row['Required_Fabric_Prediction']),
+                'Sales_Prediction': sanitize_float(row['Sales_Prediction']),
+                'Required_Fabric_Prediction': sanitize_float(row['Required_Fabric_Prediction']),
                 'Item_Details': {
-                    'Item_Visibility': row['Item_Visibility'],
+                    'Item_Visibility': sanitize_float(row['Item_Visibility']),
                     'Store_Id': row['Store_Id'],
                     'Item_Fit_Type': row['Item_Fit_Type'],
                     'Item_Fabric': row['Item_Fabric'],
-                    'Item_Fabric_Amount': row['Item_Fabric_Amount'],
-                    'Item_MRP': row['Item_MRP'],
+                    'Item_Fabric_Amount': sanitize_float(row['Item_Fabric_Amount']),
+                    'Item_MRP': sanitize_float(row['Item_MRP']),
                     'Store_Establishment_Year': row['Store_Establishment_Year'],
                     'Store_Size': row['Store_Size'],
                     'Store_Location_Type': row['Store_Location_Type'],

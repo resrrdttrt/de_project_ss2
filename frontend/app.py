@@ -317,54 +317,194 @@ def main():
 def display_predict_page():
     st.title("Sales Prediction")
     
-    # Create tabs for single item prediction and batch prediction
-    tab1, tab2 = st.tabs(["Single Item Prediction", "Batch Prediction"])
+    st.markdown("### Item and Store Selection for Prediction")
     
-    with tab1:
-        st.markdown("### Enter Item Details")
+    # Create 3 columns for main layout
+    col1, col2, col3 = st.columns([1, 1, 2])
+    
+    prediction_items = []
+    
+    # First get all available items and stores from the database
+    with connect_to_db() as conn:
+        # Get items from the database
+        items_df = pd.read_sql("SELECT * FROM items", conn)
         
-        col1, col2 = st.columns(2)
-        with col1:
-            item_id = st.number_input("Item ID", min_value=1, step=1)
-            item_visibility = st.slider("Item Visibility", min_value=0.0, max_value=1.0, value=0.5, step=0.01)
-            store_id = st.number_input("Store ID", min_value=1, step=1)
-            item_fit_type = st.selectbox("Item Fit Type", options=[1, 2, 3], format_func=lambda x: {1: "Slim", 2: "Regular", 3: "Oversize"}.get(x, str(x)))
-            item_fabric = st.selectbox("Item Fabric", options=[1, 2, 3, 4, 5], format_func=lambda x: {1: "Cotton", 2: "Polyester", 3: "Linen", 4: "Silk", 5: "Other"}.get(x, str(x)))
-        
-        with col2:
-            item_fabric_amount = st.number_input("Item Fabric Amount", min_value=0.1, step=0.1, value=8.0)
-            item_mrp = st.number_input("Item MRP (₹)", min_value=1.0, step=10.0, value=199.99)
-            store_establishment_year = st.number_input("Store Establishment Year", min_value=1950, max_value=2025, value=2010)
-            store_size = st.selectbox("Store Size", options=[1, 2, 3], format_func=lambda x: {1: "Small", 2: "Medium", 3: "Large"}.get(x, str(x)))
-            store_location_type = st.selectbox("Store Location Type", options=[1, 2, 3], format_func=lambda x: {1: "Tier 1", 2: "Tier 2", 3: "Tier 3"}.get(x, str(x)))
-            store_type = st.selectbox("Store Type", options=[1, 2], format_func=lambda x: {1: "Flagship Store", 2: "Regular Store"}.get(x, str(x)))
-        
-        if st.button("Predict Sales", key="single_predict"):
-            # Create payload for API
-            payload = {
-                "items": [
-                    {
-                        "Item_Id": int(item_id),
-                        "Item_Visibility": float(item_visibility),
-                        "Store_Id": int(store_id),
-                        "Item_Fit_Type": int(item_fit_type),
-                        "Item_Fabric": int(item_fabric),
-                        "Item_Fabric_Amount": float(item_fabric_amount),
-                        "Item_MRP": float(item_mrp),
-                        "Store_Establishment_Year": int(store_establishment_year),
-                        "Store_Size": int(store_size),
-                        "Store_Location_Type": int(store_location_type),
-                        "Store_Type": int(store_type)
-                    }
-                ]
+        # Try to get stores from the database - in this demo we'll create a mock list if table doesn't exist
+        try:
+            stores_df = pd.read_sql("SELECT * FROM stores", conn)
+        except Exception:
+            # Create mock stores data for demonstration
+            stores_data = {
+                'store_id': ['STR001', 'STR002', 'STR003', 'STR004', 'STR005'],
+                'store_establishment_year': [2010, 2015, 2018, 2020, 2022],
+                'store_size': [2, 3, 1, 2, 3],  # 1: Small, 2: Medium, 3: Large
+                'store_location_type': [1, 2, 3, 1, 2],  # 1: Tier 1, 2: Tier 2, 3: Tier 3
+                'store_type': [1, 1, 2, 1, 2]  # 1: Flagship Store, 2: Regular Store
             }
+            stores_df = pd.DataFrame(stores_data)
+    
+    with col1:
+        st.markdown("#### Select Items")
+        # Multiselect for items
+        selected_items = st.multiselect(
+            "Choose items for prediction:",
+            options=items_df['item_id'].tolist(),
+            default=items_df['item_id'].iloc[0] if not items_df.empty else None,
+            help="Select one or more items for sales prediction."
+        )
+
+    with col2:
+        st.markdown("#### Select Stores")
+        # Multiselect for stores
+        selected_stores = st.multiselect(
+            "Choose stores for prediction:",
+            options=stores_df['store_id'].tolist(),
+            default=stores_df['store_id'].iloc[0] if not stores_df.empty else None,
+            help="Select one or more stores where these items will be sold."
+        )
+    
+    # Create form for additional parameters when items/stores are selected
+    if selected_items and selected_stores:
+        with col3:
+            st.markdown("#### Additional Parameters")
+            item_visibility = st.slider("Item Visibility", min_value=0.0, max_value=1.0, value=0.5, step=0.01)
+            
+            # For each store, we'll have default values based on the store's data
+            st.markdown("##### Store parameters are auto-filled from the database")
+            
+            # These are just for display - we'll use the actual database values for prediction
+            st.text(f"Store parameters used: Store Size, Location Type, Establishment Year, etc.")
+        
+        # Create all combinations of items and stores
+        for item_id in selected_items:
+            item_data = items_df[items_df['item_id'] == item_id].iloc[0]
+            
+            # Convert string fit type to numeric
+            fit_type_map = {"Slim": 1, "Regular": 2, "Oversize": 3}
+            item_fit_type = fit_type_map.get(item_data['item_fit_type'], 2)  # Default to Regular if not found
+            
+            # Convert string fabric to numeric
+            fabric_map = {"Cotton": 1, "Polyester": 2, "Linen": 3, "Silk": 4, "Other": 5}
+            item_fabric = fabric_map.get(item_data['item_fabric'], 1)  # Default to Cotton if not found
+            
+            for store_id in selected_stores:
+                store_data = stores_df[stores_df['store_id'] == store_id].iloc[0]
+                
+                # Get proper numeric values for store data
+                store_size = store_data['store_size'] if isinstance(store_data['store_size'], int) else 2
+                store_location_type = store_data['store_location_type'] if isinstance(store_data['store_location_type'], int) else 1
+                store_type = store_data['store_type'] if isinstance(store_data['store_type'], int) else 1
+                store_establishment_year = store_data['store_establishment_year'] if isinstance(store_data['store_establishment_year'], int) else 2015
+                
+                # Extract numeric part of item_id and store_id safely
+                try:
+                    if 'TSH' in item_id:
+                        item_id_num = int(item_id.replace('TSH', ''))
+                    else:
+                        item_id_num = int(item_id)
+                except ValueError:
+                    # If conversion fails, use a default value or some hash of the string
+                    item_id_num = hash(item_id) % 10000  # Use modulo to get a reasonable size number
+                
+                try:
+                    if 'STR' in store_id:
+                        store_id_num = int(store_id.replace('STR', ''))
+                    else:
+                        store_id_num = int(store_id)
+                except ValueError:
+                    # If conversion fails, use a default value or some hash of the string
+                    store_id_num = hash(store_id) % 1000  # Use modulo to get a reasonable size number
+                
+                # Create prediction item
+                prediction_items.append({
+                    "Item_Id": item_id_num,
+                    "Item_Visibility": float(item_visibility),
+                    "Store_Id": store_id_num,
+                    "Item_Fit_Type": int(item_fit_type),
+                    "Item_Fabric": int(item_fabric),
+                    "Item_Fabric_Amount": float(item_data['item_fabric_amount']),
+                    "Item_MRP": float(item_data['item_mrp']),
+                    "Store_Establishment_Year": int(store_establishment_year),
+                    "Store_Size": int(store_size),
+                    "Store_Location_Type": int(store_location_type),
+                    "Store_Type": int(store_type)
+                })
+    
+    # Allow CSV file upload for batch prediction
+    st.markdown("---")
+    st.markdown("### Or Upload CSV for Batch Prediction")
+    
+    # Sample file button
+    if st.button("Show Sample CSV Format"):
+        sample_data = """Item_Id,Item_Visibility,Store_Id,Item_Fit_Type,Item_Fabric,Item_Fabric_Amount,Item_MRP,Store_Establishment_Year,Store_Size,Store_Location_Type,Store_Type
+101,0.5,1,2,1,8.2,199.99,2010,2,1,1
+102,0.3,2,1,3,7.5,249.50,2015,3,2,1"""
+        
+        st.code(sample_data, language="csv")
+        
+        st.download_button(
+            label="Download Sample CSV",
+            data=sample_data,
+            file_name="sample_prediction.csv",
+            mime="text/csv"
+        )
+    
+    # File uploader
+    uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
+    
+    if uploaded_file is not None:
+        try:
+            # Read CSV file
+            df = pd.read_csv(uploaded_file)
+            
+            # Display uploaded data
+            st.markdown("#### Uploaded Data")
+            st.dataframe(df, use_container_width=True)
+            
+            # Validate columns
+            required_columns = ["Item_Id", "Item_Visibility", "Store_Id", "Item_Fit_Type", 
+                                "Item_Fabric", "Item_Fabric_Amount", "Item_MRP", 
+                                "Store_Establishment_Year", "Store_Size", 
+                                "Store_Location_Type", "Store_Type"]
+            
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            
+            if missing_columns:
+                st.error(f"Missing required columns: {', '.join(missing_columns)}")
+            else:
+                # Add CSV items to prediction items
+                for _, row in df.iterrows():
+                    prediction_items.append({
+                        "Item_Id": int(row["Item_Id"]),
+                        "Item_Visibility": float(row["Item_Visibility"]),
+                        "Store_Id": int(row["Store_Id"]),
+                        "Item_Fit_Type": int(row["Item_Fit_Type"]),
+                        "Item_Fabric": int(row["Item_Fabric"]),
+                        "Item_Fabric_Amount": float(row["Item_Fabric_Amount"]),
+                        "Item_MRP": float(row["Item_MRP"]),
+                        "Store_Establishment_Year": int(row["Store_Establishment_Year"]),
+                        "Store_Size": int(row["Store_Size"]),
+                        "Store_Location_Type": int(row["Store_Location_Type"]),
+                        "Store_Type": int(row["Store_Type"])
+                    })
+                    
+        except Exception as e:
+            st.error(f"Error reading file: {str(e)}")
+    
+    # Add prediction button
+    if prediction_items:
+        st.markdown("---")
+        st.write(f"Ready to predict sales for {len(prediction_items)} item-store combinations.")
+        
+        if st.button("Predict Sales", key="predict_button"):
+            # Create payload for API
+            payload = {"items": prediction_items}
             
             try:
                 # Show spinner while fetching results
                 with st.spinner("Predicting sales..."):
                     # Make API call
                     import requests
-                    import json
                     
                     response = requests.post(
                         "http://localhost:8000/predict",  # Change URL if needed
@@ -374,213 +514,110 @@ def display_predict_page():
                     
                     if response.status_code == 200:
                         result = response.json()
-                        prediction = result["predictions"][0]
                         
                         # Display results
-                        st.success("Prediction completed successfully!")
+                        st.success(f"Prediction completed successfully for {len(result['predictions'])} items!")
                         
                         st.markdown("### Prediction Results")
-                        result_col1, result_col2 = st.columns(2)
                         
-                        with result_col1:
-                            st.metric(
-                                "Predicted Sales (Units)", 
-                                f"{prediction['Sales_Prediction']:.2f}",
-                                delta=None
-                            )
-                            
-                        with result_col2:
-                            st.metric(
-                                "Required Fabric",
-                                f"{prediction['Required_Fabric_Prediction']:.2f} units",
-                                delta=None
-                            )
+                        # Create results dataframe
+                        results_data = []
+                        for pred in result["predictions"]:
+                            results_data.append({
+                                "Item_Id": pred["Item_Id"],
+                                "Store_Id": pred["Item_Details"]["Store_Id"],
+                                "Sales_Prediction": round(pred["Sales_Prediction"], 2),
+                                "Required_Fabric": round(pred["Required_Fabric_Prediction"], 2)
+                            })
                         
-                        # Create gauge chart for sales prediction
-                        max_sales = prediction['Sales_Prediction'] * 2  # Just to set a reasonable max
-                        fig = go.Figure(go.Indicator(
-                            mode="gauge+number",
-                            value=prediction['Sales_Prediction'],
-                            title={'text': "Predicted Sales"},
-                            gauge={
-                                'axis': {'range': [0, max_sales]},
-                                'bar': {'color': "#1E88E5"},
-                                'steps': [
-                                    {'range': [0, max_sales/3], 'color': "#EF9A9A"},
-                                    {'range': [max_sales/3, max_sales*2/3], 'color': "#FFCC80"},
-                                    {'range': [max_sales*2/3, max_sales], 'color': "#A5D6A7"}
-                                ]
-                            }
-                        ))
-                        st.plotly_chart(fig, use_container_width=True)
+                        results_df = pd.DataFrame(results_data)
                         
-                        # Show important features that influenced the prediction
-                        st.markdown("### Key Factors Influencing Prediction")
-                        features_data = {
-                            'Feature': ['Item MRP', 'Fabric Amount', 'Store Size', 'Location Type', 'Item Visibility'],
-                            'Value': [
-                                f"₹{item_mrp:.2f}",
-                                f"{item_fabric_amount:.1f} units",
-                                {1: "Small", 2: "Medium", 3: "Large"}.get(store_size),
-                                {1: "Tier 1", 2: "Tier 2", 3: "Tier 3"}.get(store_location_type),
-                                f"{item_visibility:.2f}"
-                            ],
-                            'Impact': [0.35, 0.25, 0.15, 0.15, 0.10]  # Dummy importance values
-                        }
-                        
-                        features_df = pd.DataFrame(features_data)
-                        
-                        # Create impact visualization
-                        fig = px.bar(
-                            features_df.sort_values('Impact', ascending=False),
-                            x='Impact',
-                            y='Feature',
-                            orientation='h',
-                            color='Impact',
-                            color_continuous_scale='Blues',
-                            labels={'Impact': 'Relative Importance'},
-                            title='Feature Importance (Estimated)'
+                        # Display results table
+                        st.dataframe(
+                            results_df,
+                            column_config={
+                                "Item_Id": st.column_config.TextColumn("Item ID"),
+                                "Store_Id": st.column_config.TextColumn("Store ID"),
+                                "Sales_Prediction": st.column_config.NumberColumn("Predicted Sales (Units)", format="%.2f"),
+                                "Required_Fabric": st.column_config.NumberColumn("Required Fabric (Units)", format="%.2f")
+                            },
+                            hide_index=True,
+                            use_container_width=True
                         )
-                        st.plotly_chart(fig, use_container_width=True)
                         
+                        # Visualization of batch results
+                        st.markdown("### Results Visualization")
+                        
+                        # Sales prediction by item/store
+                        if len(results_df) > 1:
+                            fig = px.bar(
+                                results_df,
+                                x="Item_Id",
+                                y="Sales_Prediction",
+                                color="Store_Id",
+                                title="Predicted Sales by Item and Store",
+                                labels={
+                                    "Item_Id": "Item ID",
+                                    "Sales_Prediction": "Predicted Sales (Units)",
+                                    "Store_Id": "Store ID"
+                                }
+                            )
+                            st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Single item detailed display
+                        else:
+                            prediction = result["predictions"][0]
+                            
+                            result_col1, result_col2 = st.columns(2)
+                            
+                            with result_col1:
+                                st.metric(
+                                    "Predicted Sales (Units)", 
+                                    f"{prediction['Sales_Prediction']:.2f}",
+                                    delta=None
+                                )
+                                
+                            with result_col2:
+                                st.metric(
+                                    "Required Fabric",
+                                    f"{prediction['Required_Fabric_Prediction']:.2f} units",
+                                    delta=None
+                                )
+                            
+                            # Create gauge chart for sales prediction
+                            max_sales = prediction['Sales_Prediction'] * 2  # Just to set a reasonable max
+                            fig = go.Figure(go.Indicator(
+                                mode="gauge+number",
+                                value=prediction['Sales_Prediction'],
+                                title={'text': "Predicted Sales"},
+                                gauge={
+                                    'axis': {'range': [0, max_sales]},
+                                    'bar': {'color': "#1E88E5"},
+                                    'steps': [
+                                        {'range': [0, max_sales/3], 'color': "#EF9A9A"},
+                                        {'range': [max_sales/3, max_sales*2/3], 'color': "#FFCC80"},
+                                        {'range': [max_sales*2/3, max_sales], 'color': "#A5D6A7"}
+                                    ]
+                                }
+                            ))
+                            st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Download results as CSV
+                        csv = results_df.to_csv(index=False)
+                        st.download_button(
+                            label="Download Results as CSV",
+                            data=csv,
+                            file_name="sales_predictions.csv",
+                            mime="text/csv"
+                        )
                     else:
                         st.error(f"Error: {response.status_code} - {response.text}")
             
             except Exception as e:
                 st.error(f"Error making prediction: {str(e)}")
                 st.info("Make sure the prediction API is running at http://localhost:8000")
-    
-    with tab2:
-        st.markdown("### Batch Prediction")
-        st.info("Upload a CSV file with multiple items to predict sales for all of them at once.")
-        
-        # Show sample format
-        st.markdown("""
-        **CSV Format:**
-        ```
-        Item_Id,Item_Visibility,Store_Id,Item_Fit_Type,Item_Fabric,Item_Fabric_Amount,Item_MRP,Store_Establishment_Year,Store_Size,Store_Location_Type,Store_Type
-        101,0.5,1,2,1,8.2,199.99,2010,2,1,1
-        102,0.3,2,1,3,7.5,249.50,2015,3,2,1
-        ```
-        """)
-        
-        # File uploader
-        uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
-        
-        if uploaded_file is not None:
-            try:
-                # Read CSV file
-                df = pd.read_csv(uploaded_file)
-                
-                # Display uploaded data
-                st.markdown("### Uploaded Data")
-                st.dataframe(df)
-                
-                # Validate columns
-                required_columns = ["Item_Id", "Item_Visibility", "Store_Id", "Item_Fit_Type", 
-                                    "Item_Fabric", "Item_Fabric_Amount", "Item_MRP", 
-                                    "Store_Establishment_Year", "Store_Size", 
-                                    "Store_Location_Type", "Store_Type"]
-                
-                missing_columns = [col for col in required_columns if col not in df.columns]
-                
-                if missing_columns:
-                    st.error(f"Missing required columns: {', '.join(missing_columns)}")
-                else:
-                    if st.button("Predict Batch Sales"):
-                        # Create payload for API
-                        items_list = []
-                        for _, row in df.iterrows():
-                            items_list.append({
-                                "Item_Id": int(row["Item_Id"]),
-                                "Item_Visibility": float(row["Item_Visibility"]),
-                                "Store_Id": int(row["Store_Id"]),
-                                "Item_Fit_Type": int(row["Item_Fit_Type"]),
-                                "Item_Fabric": int(row["Item_Fabric"]),
-                                "Item_Fabric_Amount": float(row["Item_Fabric_Amount"]),
-                                "Item_MRP": float(row["Item_MRP"]),
-                                "Store_Establishment_Year": int(row["Store_Establishment_Year"]),
-                                "Store_Size": int(row["Store_Size"]),
-                                "Store_Location_Type": int(row["Store_Location_Type"]),
-                                "Store_Type": int(row["Store_Type"])
-                            })
-                        
-                        payload = {"items": items_list}
-                        
-                        try:
-                            # Show spinner while fetching results
-                            with st.spinner("Predicting sales for all items..."):
-                                # Make API call
-                                import requests
-                                
-                                response = requests.post(
-                                    "http://localhost:8000/predict",  # Change URL if needed
-                                    json=payload,
-                                    headers={"Content-Type": "application/json"}
-                                )
-                                
-                                if response.status_code == 200:
-                                    result = response.json()
-                                    
-                                    # Create results dataframe
-                                    results_data = []
-                                    for pred in result["predictions"]:
-                                        results_data.append({
-                                            "Item_Id": pred["Item_Id"],
-                                            "Sales_Prediction": round(pred["Sales_Prediction"], 2),
-                                            "Required_Fabric": round(pred["Required_Fabric_Prediction"], 2)
-                                        })
-                                    
-                                    results_df = pd.DataFrame(results_data)
-                                    
-                                    # Display results
-                                    st.success(f"Successfully predicted sales for {len(results_df)} items!")
-                                    
-                                    st.markdown("### Prediction Results")
-                                    st.dataframe(
-                                        results_df,
-                                        column_config={
-                                            "Item_Id": "Item ID",
-                                            "Sales_Prediction": st.column_config.NumberColumn("Predicted Sales (Units)", format="%.2f"),
-                                            "Required_Fabric": st.column_config.NumberColumn("Required Fabric (Units)", format="%.2f")
-                                        },
-                                        hide_index=True,
-                                        use_container_width=True
-                                    )
-                                    
-                                    # Visualization of batch results
-                                    st.markdown("### Results Visualization")
-                                    
-                                    # Sales prediction by item
-                                    fig = px.bar(
-                                        results_df,
-                                        x="Item_Id",
-                                        y="Sales_Prediction",
-                                        title="Predicted Sales by Item",
-                                        labels={
-                                            "Item_Id": "Item ID",
-                                            "Sales_Prediction": "Predicted Sales (Units)"
-                                        }
-                                    )
-                                    st.plotly_chart(fig, use_container_width=True)
-                                    
-                                    # Download results as CSV
-                                    csv = results_df.to_csv(index=False)
-                                    st.download_button(
-                                        label="Download Results as CSV",
-                                        data=csv,
-                                        file_name="sales_predictions.csv",
-                                        mime="text/csv"
-                                    )
-                                else:
-                                    st.error(f"Error: {response.status_code} - {response.text}")
-                        
-                        except Exception as e:
-                            st.error(f"Error making prediction: {str(e)}")
-                            st.info("Make sure the prediction API is running at http://localhost:8000")
-            
-            except Exception as e:
-                st.error(f"Error reading file: {str(e)}")
+    else:
+        st.info("Please select at least one item and one store, or upload a CSV file to proceed with prediction.")
                 
     # Add API health check
     st.markdown("---")
@@ -860,110 +897,213 @@ def display_realtime_visualization_page():
         if len(transaction_data) < 5:
             st.warning("Not enough transaction data for prediction. Need at least 5 data points.")
             return
+        
+        # Get unique stores and items for selection
+        unique_stores = transaction_data['store_id'].unique().tolist()
+        unique_items = transaction_data['item_id'].unique().tolist()
+        
+        # Create selection options
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("#### Select Data to Predict")
+            prediction_scope = st.radio(
+                "Prediction Scope",
+                options=["All Data", "Selected Stores", "Selected Items", "Selected Stores & Items"],
+                index=0
+            )
+        
+        with col2:
+            days_to_predict = st.slider(
+                "Number of days to predict",
+                min_value=1,
+                max_value=30,
+                value=7
+            )
             
-        # Time series prediction
-        transaction_daily = transaction_data.groupby(transaction_data['buy_time'].dt.date)['amount'].sum().reset_index()
-        transaction_daily = transaction_daily.rename(columns={'buy_time': 'date'})
+            model_complexity = st.slider(
+                "Model complexity (polynomial degree)",
+                min_value=1,
+                max_value=5,
+                value=2
+            )
         
-        # Generate numeric features for the dates
-        transaction_daily['day_number'] = range(1, len(transaction_daily) + 1)
+        # Store and item selection based on user choice
+        selected_stores = []
+        selected_items = []
         
-        # Train a polynomial regression model
-        X = transaction_daily[['day_number']]
-        y = transaction_daily['amount']
-        
-        # Allow user to select model complexity
-        model_complexity = st.slider(
-            "Select model complexity (degree of polynomial)",
-            min_value=1,
-            max_value=5,
-            value=2
-        )
-        
-        # Create polynomial features
-        poly = PolynomialFeatures(degree=model_complexity)
-        X_poly = poly.fit_transform(X)
-        
-        # Train model
-        model = LinearRegression()
-        model.fit(X_poly, y)
-        
-        # Generate prediction for future days
-        future_days = st.slider(
-            "Number of days to predict",
-            min_value=1,
-            max_value=30,
-            value=7
-        )
-        
-        # Create future date range
-        last_date = transaction_daily['date'].max()
-        future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=future_days)
-        
-        # Create dataframe for future dates
-        future_df = pd.DataFrame({
-            'date': future_dates,
-            'day_number': range(len(transaction_daily) + 1, len(transaction_daily) + future_days + 1)
-        })
-        
-        # Make predictions
-        future_X_poly = poly.transform(future_df[['day_number']])
-        future_df['predicted_amount'] = model.predict(future_X_poly)
-        
-        # Combine actual and predicted data
-        full_df = pd.concat([
-            transaction_daily[['date', 'amount']],
-            future_df[['date', 'predicted_amount']]
-        ], axis=0)
-        
-        # Create chart with actual and predicted values
-        fig = go.Figure()
-        
-        # Add actual values
-        fig.add_trace(go.Scatter(
-            x=transaction_daily['date'],
-            y=transaction_daily['amount'],
-            mode='lines+markers',
-            name='Actual Transactions'
-        ))
-        
-        # Add predicted values
-        fig.add_trace(go.Scatter(
-            x=future_df['date'],
-            y=future_df['predicted_amount'],
-            mode='lines+markers',
-            line=dict(dash='dot'),
-            marker=dict(symbol='circle-open'),
-            name='Predicted Transactions'
-        ))
-        
-        fig.update_layout(
-            title="Transaction Amount Prediction",
-            xaxis_title="Date",
-            yaxis_title="Transaction Amount"
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # Show prediction metrics
-        if model_complexity > 1:
-            train_predictions = model.predict(X_poly)
-            mse = np.mean((train_predictions - y) ** 2)
-            rmse = np.sqrt(mse)
-            r2 = model.score(X_poly, y)
+        if prediction_scope in ["Selected Stores", "Selected Stores & Items"]:
+            selected_stores = st.multiselect(
+                "Select specific stores for prediction:",
+                options=unique_stores,
+                default=unique_stores[0] if unique_stores else None
+            )
             
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Mean Squared Error", f"{mse:.2f}")
-            col2.metric("Root MSE", f"{rmse:.2f}")
-            col3.metric("R² Score", f"{r2:.4f}")
+            if not selected_stores:
+                st.warning("Please select at least one store for prediction.")
+                return
+        
+        if prediction_scope in ["Selected Items", "Selected Stores & Items"]:
+            selected_items = st.multiselect(
+                "Select specific items for prediction:",
+                options=unique_items,
+                default=unique_items[0] if unique_items else None
+            )
             
-            st.markdown("""
-            **Note about the model:**
-            - This is a polynomial regression model that captures trends in the time series data
-            - Higher complexity (polynomial degree) can capture more complex patterns but may overfit
-            - The R² score indicates how well the model fits the training data
-            - Predictions become less reliable the further into the future they go
-            """)
+            if not selected_items:
+                st.warning("Please select at least one item for prediction.")
+                return
+        
+        # Filter data based on selection
+        filtered_data = transaction_data.copy()
+        
+        if prediction_scope == "Selected Stores":
+            filtered_data = filtered_data[filtered_data['store_id'].isin(selected_stores)]
+        elif prediction_scope == "Selected Items":
+            filtered_data = filtered_data[filtered_data['item_id'].isin(selected_items)]
+        elif prediction_scope == "Selected Stores & Items":
+            filtered_data = filtered_data[
+                (filtered_data['store_id'].isin(selected_stores)) & 
+                (filtered_data['item_id'].isin(selected_items))
+            ]
+        
+        # Check if we have enough filtered data
+        if len(filtered_data) < 5:
+            st.warning("Not enough data for the selected stores/items. Please select different options.")
+            return
+        
+        # Button to trigger prediction
+        if st.button("Generate Prediction"):
+            with st.spinner("Generating prediction..."):
+                # Time series prediction
+                transaction_daily = filtered_data.groupby(filtered_data['buy_time'].dt.date)['amount'].sum().reset_index()
+                transaction_daily = transaction_daily.rename(columns={'buy_time': 'date'})
+                
+                # Generate numeric features for the dates
+                transaction_daily['day_number'] = range(1, len(transaction_daily) + 1)
+                
+                # Train a polynomial regression model
+                X = transaction_daily[['day_number']]
+                y = transaction_daily['amount']
+                
+                # Create polynomial features
+                poly = PolynomialFeatures(degree=model_complexity)
+                X_poly = poly.fit_transform(X)
+                
+                # Train model
+                model = LinearRegression()
+                model.fit(X_poly, y)
+                
+                # Create future date range
+                last_date = transaction_daily['date'].max()
+                future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=days_to_predict)
+                
+                # Create dataframe for future dates
+                future_df = pd.DataFrame({
+                    'date': future_dates,
+                    'day_number': range(len(transaction_daily) + 1, len(transaction_daily) + days_to_predict + 1)
+                })
+                
+                # Make predictions
+                future_X_poly = poly.transform(future_df[['day_number']])
+                future_df['predicted_amount'] = model.predict(future_X_poly)
+                
+                # Combine actual and predicted data
+                full_df = pd.concat([
+                    transaction_daily[['date', 'amount']],
+                    future_df[['date', 'predicted_amount']]
+                ], axis=0)
+                
+                # Create chart with actual and predicted values
+                fig = go.Figure()
+                
+                # Add actual values
+                fig.add_trace(go.Scatter(
+                    x=transaction_daily['date'],
+                    y=transaction_daily['amount'],
+                    mode='lines+markers',
+                    name='Actual Transactions'
+                ))
+                
+                # Add predicted values
+                fig.add_trace(go.Scatter(
+                    x=future_df['date'],
+                    y=future_df['predicted_amount'],
+                    mode='lines+markers',
+                    line=dict(dash='dot'),
+                    marker=dict(symbol='circle-open'),
+                    name='Predicted Transactions'
+                ))
+                
+                # Customize prediction chart title based on selection
+                title_suffix = ""
+                if prediction_scope == "Selected Stores":
+                    title_suffix = f" for Store(s): {', '.join(map(str, selected_stores))}"
+                elif prediction_scope == "Selected Items":
+                    title_suffix = f" for Item(s): {', '.join(map(str, selected_items))}"
+                elif prediction_scope == "Selected Stores & Items":
+                    title_suffix = f" for Selected Store(s) and Item(s)"
+                
+                fig.update_layout(
+                    title=f"Transaction Amount Prediction{title_suffix}",
+                    xaxis_title="Date",
+                    yaxis_title="Transaction Amount"
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Show prediction metrics
+                if model_complexity > 1:
+                    train_predictions = model.predict(X_poly)
+                    mse = np.mean((train_predictions - y) ** 2)
+                    rmse = np.sqrt(mse)
+                    r2 = model.score(X_poly, y)
+                    
+                    col1, col2, col3 = st.columns(3)
+                    col1.metric("Mean Squared Error", f"{mse:.2f}")
+                    col2.metric("Root MSE", f"{rmse:.2f}")
+                    col3.metric("R² Score", f"{r2:.4f}")
+                
+                # Show summary stats
+                st.markdown("### Prediction Summary")
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric(
+                        "Average Daily Transactions (Historical)", 
+                        f"{transaction_daily['amount'].mean():.1f}"
+                    )
+                
+                with col2:
+                    st.metric(
+                        "Average Daily Transactions (Predicted)", 
+                        f"{future_df['predicted_amount'].mean():.1f}",
+                        delta=f"{future_df['predicted_amount'].mean() - transaction_daily['amount'].mean():.1f}"
+                    )
+                
+                with col3:
+                    st.metric(
+                        "Total Predicted Transactions", 
+                        f"{future_df['predicted_amount'].sum():.1f}"
+                    )
+                
+                # Download prediction data
+                csv = future_df.to_csv(index=False)
+                st.download_button(
+                    label="Download Prediction Data as CSV",
+                    data=csv,
+                    file_name="transaction_predictions.csv",
+                    mime="text/csv"
+                )
+                
+                st.markdown("""
+                **Note about the model:**
+                - This prediction is based on historical transaction patterns
+                - The polynomial regression model captures trends in the time series data
+                - Higher complexity (polynomial degree) can capture more complex patterns but may overfit
+                - The R² score indicates how well the model fits the training data
+                - Predictions become less reliable the further into the future they go
+                """)
 
 def display_realtime_statistics_page():
     st.title("Realtime Statistics")
