@@ -238,8 +238,8 @@ def main():
         # Main menu options
         main_menu = option_menu(
             menu_title=None,
-            options=["Items", "Stores", "Transaction", "Realtime", "Predict", "About"],
-            icons=["table", "shop", "cash-coin", "broadcast", "info-circle"],
+            options=["Overall", "Items", "Stores", "Transaction", "Realtime", "Predict", "About"],
+            icons=["graph-up", "table", "shop", "cash-coin", "broadcast", "calculator", "info-circle"],
             menu_icon="cast",
             default_index=0,
         )
@@ -277,7 +277,9 @@ def main():
         st.caption("© 2025 Textile Industry Management System")
 
     # Display the selected section based on the main menu and dropdown selection
-    if main_menu == "Items":
+    if main_menu == "Overall":
+        display_overall_insights_page()
+    elif main_menu == "Items":
         if selected_submenu == "Data":
             display_items_page()
         elif selected_submenu == "Visualization":
