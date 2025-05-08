@@ -419,30 +419,30 @@ def display_predict_page():
                 store_type = store_data['store_type'] if isinstance(store_data['store_type'], int) else 1
                 store_establishment_year = store_data['store_establishment_year'] if isinstance(store_data['store_establishment_year'], int) else 2015
                 
-                # Extract numeric part of item_id and store_id safely
-                try:
-                    if 'TSH' in item_id:
-                        item_id_num = int(item_id.replace('TSH', ''))
-                    else:
-                        item_id_num = int(item_id)
-                except ValueError:
-                    # If conversion fails, use a default value or some hash of the string
-                    item_id_num = hash(item_id) % 10000  # Use modulo to get a reasonable size number
+                # # Extract numeric part of item_id and store_id safely
+                # try:
+                #     if 'TSH' in item_id:
+                #         item_id_num = int(item_id.replace('TSH', ''))
+                #     else:
+                #         item_id_num = int(item_id)
+                # except ValueError:
+                #     # If conversion fails, use a default value or some hash of the string
+                #     item_id_num = hash(item_id) % 10000  # Use modulo to get a reasonable size number
                 
-                try:
-                    if 'STR' in store_id:
-                        store_id_num = int(store_id.replace('STR', ''))
-                    else:
-                        store_id_num = int(store_id)
-                except ValueError:
-                    # If conversion fails, use a default value or some hash of the string
-                    store_id_num = hash(store_id) % 1000  # Use modulo to get a reasonable size number
+                # try:
+                #     if 'STR' in store_id:
+                #         store_id_num = int(store_id.replace('STR', ''))
+                #     else:
+                #         store_id_num = int(store_id)
+                # except ValueError:
+                #     # If conversion fails, use a default value or some hash of the string
+                #     store_id_num = hash(store_id) % 1000  # Use modulo to get a reasonable size number
                 
                 # Create prediction item
                 prediction_items.append({
-                    "Item_Id": item_id_num,
+                    "Item_Id": item_id,
                     "Item_Visibility": float(item_visibility),
-                    "Store_Id": store_id_num,
+                    "Store_Id": store_id,
                     "Item_Fit_Type": int(item_fit_type),
                     "Item_Fabric": int(item_fabric),
                     "Item_Fabric_Amount": float(item_data['item_fabric_amount']),
